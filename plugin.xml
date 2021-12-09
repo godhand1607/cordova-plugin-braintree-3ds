@@ -50,10 +50,7 @@
     <!-- iOS Configuration -->
     <platform name="ios">
 
-	<!-- Hook to embed iOS frameworks after ios platform added -->
-	    <hook type="after_platform_add" src="scripts/add_embedded_ios_frameworks.js" />
-	<!-- Hook to embed iOS frameworks after installation -->
-	    <hook type="after_plugin_install" src="scripts/add_embedded_ios_frameworks.js" />
+        <preference name="IOS_BRAINTREE_POD_VERSION" default="~> 5.5.0" />
 
         <config-file target="config.xml" parent="/*">
             <feature name="BraintreePlugin">
@@ -61,47 +58,21 @@
             </feature>
         </config-file>
 
-        <config-file target="*-Info.plist" parent="LSApplicationQueriesSchemes">
-          <array>
-            <string>com.paypal.ppclient.touch.v1</string>
-            <string>com.paypal.ppclient.touch.v2</string>
-            <string>com.venmo.touch.v2</string>
-          </array>
-        </config-file>
-
-        <config-file target="*-Info.plist" parent="CFBundleURLTypes">
-            <array>
-                <dict>
-                <key>CFBundleTypeRole</key>
-                <string>Editor</string>
-                <key>CFBundleURLSchemes</key>
-                <array>
-                    <string>${PRODUCT_BUNDLE_IDENTIFIER}.payments</string>
-                </array>
-                </dict>
-            </array>
-        </config-file>
-
         <header-file src="src/ios/BraintreePlugin.h" />
         <source-file src="src/ios/BraintreePlugin.m" />
 
-        <framework src="lib/ios/Braintree3DSecure.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreeAmericanExpress.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreeApplePay.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreeCard.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreeCore.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreeDataCollector.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreeDropIn.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreePaymentFlow.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreePayPal.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreeUI.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreeUIKit.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreeUnionPay.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/BraintreeVenmo.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/CardinalMobile.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/PayPalDataCollector.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/PayPalOneTouch.framework" custom="true" embed="true" weak="false" />
-        <framework src="lib/ios/PayPalUtils.framework" custom="true" embed="true" weak="false" />
+        <podspec>
+            <config>
+                <source url="https://cdn.cocoapods.org/" />
+            </config>
+            <pods>
+                <pod name="Braintree" spec="$IOS_BRAINTREE_POD_VERSION" />
+                <pod name="Braintree/DataCollector" spec="$IOS_BRAINTREE_POD_VERSION" />
+                <pod name="Braintree/ThreeDSecure" spec="$IOS_BRAINTREE_POD_VERSION" />
+                <pod name="Braintree/ApplePay" spec="$IOS_BRAINTREE_POD_VERSION" />
+
+            </pods>
+        </podspec>
 
     </platform>
 

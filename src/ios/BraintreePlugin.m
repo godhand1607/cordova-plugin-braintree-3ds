@@ -6,37 +6,28 @@
 
 #import "BraintreePlugin.h"
 #import <objc/runtime.h>
-#import <BraintreeDropIn/BraintreeDropIn.h>
-#import <BraintreeDropIn/BTDropInController.h>
-#import <BraintreeCore/BTAPIClient.h>
-#import <BraintreeCore/BTPaymentMethodNonce.h>
-#import <BraintreeCard/BTCardNonce.h>
-#import <BraintreePayPal/BraintreePayPal.h>
-#import <BraintreeApplePay/BraintreeApplePay.h>
-#import <Braintree3DSecure/Braintree3DSecure.h>
-#import <BraintreeVenmo/BraintreeVenmo.h>
-#import "AppDelegate.h"
-#import <BraintreeDataCollector/BraintreeDataCollector.h>
-#import <BraintreePaymentFlow/BraintreePaymentFlow.h>
+#import <Braintree/BTAPIClient.h>
+#import <Braintree/BTPaymentMethodNonce.h>
+#import <Braintree/BTCardNonce.h>
+#import <Braintree/BraintreeApplePay.h>
+#import <Braintree/BraintreeDataCollector.h>
 
 @interface BraintreePlugin() <PKPaymentAuthorizationViewControllerDelegate>
 
-@property (nonatomic, strong) BTAPIClient *braintreeClient;
-@property (nonatomic, strong) BTDataCollector *dataCollector;
+@property (nonatomic, strong) BTAPIClient * braintreeClient;
+@property (nonatomic, strong) BTDataCollector * dataCollector;
 @property (nonatomic, strong) NSString * _Nonnull deviceDataCollector;
-@property (nonatomic, strong, readwrite) BTPaymentFlowDriver *paymentFlowDriver;
-@property NSString* token;
+@property NSString * token;
 
 @end
 
 @implementation BraintreePlugin
 
-NSString *dropInUIcallbackId;
+NSString * dropInUIcallbackId;
 bool applePaySuccess;
-bool applePayInited = NO;
-NSString *applePayMerchantID;
-NSString *currencyCode;
-NSString *countryCode;
+NSString * applePayMerchantID;
+NSString * currencyCode;
+NSString * countryCode;
 
 #pragma mark - Cordova commands
 
@@ -67,14 +58,15 @@ NSString *countryCode;
     }
 
     self.dataCollector = [[BTDataCollector alloc] initWithAPIClient:self.braintreeClient];
-    [self.dataCollector collectCardFraudData:^(NSString * _Nonnull deviceDataCollector) {
+    [self.dataCollector collectDeviceData:^(NSString * _Nonnull deviceDataCollector) {
         // Save deviceData
         self.deviceDataCollector = deviceDataCollector;
     }];
-    NSString *bundle_id = [NSBundle mainBundle].bundleIdentifier;
-    bundle_id = [bundle_id stringByAppendingString:@".payments"];
 
-    [BTAppSwitch setReturnURLScheme:bundle_id];
+//    NSString *bundle_id = [NSBundle mainBundle].bundleIdentifier;
+//    bundle_id = [bundle_id stringByAppendingString:@".payments"];
+//
+//    [BTAppContextSwitcher setReturnURLScheme:bundle_id];
 
     CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
@@ -100,7 +92,7 @@ NSString *countryCode;
         currencyCode = [command.arguments objectAtIndex:1];
         countryCode = [command.arguments objectAtIndex:2];
 
-        applePayInited = YES;
+        // applePayInited = YES;
 
         CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
         [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
@@ -127,7 +119,6 @@ NSString *countryCode;
     }
 
     // Obtain the arguments.
-
     NSString* amount = (NSString *)[command.arguments objectAtIndex:0];
     if ([amount isKindOfClass:[NSNumber class]]) {
         amount = [(NSNumber *)amount stringValue];
@@ -139,129 +130,64 @@ NSString *countryCode;
     }
 
     NSString* primaryDescription = [command.arguments objectAtIndex:1];
-    NSDictionary* threeDSecureOptions = [[NSDictionary alloc]init];
-    threeDSecureOptions = [command argumentAtIndex:2];
-    
-    
-    if (!threeDSecureOptions) {
-        CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"threeDSecure are required."];
-        [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
-        return;
-    }
-    
-    NSNumber* threeDSecureAmount = threeDSecureOptions[@"amount"];
-    if (!threeDSecureAmount) {
-        CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString: @"You must provide an amount for 3D Secure"];
-        [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
-        return;
-    }
-    
-    NSString* threeDSecureEmail = threeDSecureOptions[@"email"];
-    if (!threeDSecureEmail) {
-        CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString: @"You must provide an email for 3D Secure"];
-        [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
-        return;
-    }
-    
-    
+
     // Save off the Cordova callback ID so it can be used in the completion handlers.
     dropInUIcallbackId = command.callbackId;
-    
 
-    /* Drop-IN 5.0 */
-    BTDropInRequest *paymentRequest = [[BTDropInRequest alloc] init];
-    paymentRequest.applePayDisabled = !applePayInited;
-    paymentRequest.vaultManager = YES;
+    [self presentApplePayWithDescription:primaryDescription andAmount:amount];
+}
 
-    paymentRequest.threeDSecureVerification = YES;
-    BTThreeDSecureRequest *threeDSecureRequest = [[BTThreeDSecureRequest alloc] init];
-    threeDSecureRequest.amount = [NSDecimalNumber decimalNumberWithString:amount];
-    threeDSecureRequest.email = threeDSecureEmail;
-    threeDSecureRequest.versionRequested = BTThreeDSecureVersion2;
-    paymentRequest.threeDSecureRequest = threeDSecureRequest;
+- (void)presentApplePayWithDescription:(NSString*)description andAmount:(NSString*)amount {
 
-    BTDropInController *dropIn = [[BTDropInController alloc] initWithAuthorization:self.token request:paymentRequest handler:^(BTDropInController * _Nonnull controller, BTDropInResult * _Nullable result, NSError * _Nullable error) {
-        [self.viewController dismissViewControllerAnimated:YES completion:nil];
+    BTApplePayClient *applePayClient = [[BTApplePayClient alloc] initWithAPIClient:self.braintreeClient];
+    [applePayClient paymentRequest:^(PKPaymentRequest * _Nullable paymentRequest, NSError * _Nullable error) {
+
         if (error != nil) {
-            NSLog(@"ERROR: %@", [error localizedDescription]);
+            NSLog(@"Error: %@",[error localizedDescription]);
             CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
 
             [self.commandDelegate sendPluginResult:pluginResult callbackId:dropInUIcallbackId];
             dropInUIcallbackId = nil;
-        } else if (result.cancelled) {
-            if (dropInUIcallbackId) {
 
-                NSDictionary *dictionary = @{ @"userCancelled": @YES };
-
-                CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
-                                                              messageAsDictionary:dictionary];
-
-                [self.commandDelegate sendPluginResult:pluginResult callbackId:dropInUIcallbackId];
-                dropInUIcallbackId = nil;
-            }
-        } else {
-            if (dropInUIcallbackId) {
-                if (result.paymentOptionType == BTUIKPaymentOptionTypeApplePay ) {
-                    PKPaymentRequest *apPaymentRequest = [[PKPaymentRequest alloc] init];
-                    apPaymentRequest.paymentSummaryItems = @[
-                                                             [PKPaymentSummaryItem summaryItemWithLabel:primaryDescription amount:[NSDecimalNumber decimalNumberWithString: amount]]
-                                                             ];
-                    apPaymentRequest.supportedNetworks = @[PKPaymentNetworkVisa, PKPaymentNetworkMasterCard, PKPaymentNetworkAmex, PKPaymentNetworkDiscover];
-                    apPaymentRequest.merchantCapabilities = PKMerchantCapability3DS;
-                    apPaymentRequest.currencyCode = currencyCode;
-                    apPaymentRequest.countryCode = countryCode;
-
-                    apPaymentRequest.merchantIdentifier = applePayMerchantID;
-
-                    if ((PKPaymentAuthorizationViewController.canMakePayments) && ([PKPaymentAuthorizationViewController canMakePaymentsUsingNetworks:apPaymentRequest.supportedNetworks])) {
-                        PKPaymentAuthorizationViewController *viewController = [[PKPaymentAuthorizationViewController alloc] initWithPaymentRequest:apPaymentRequest];
-                        viewController.delegate = self;
-
-                        applePaySuccess = NO;
-
-                        /* display ApplePay ont the rootViewController */
-                        UIViewController *rootViewController = [[[UIApplication sharedApplication] keyWindow] rootViewController];
-
-                        [rootViewController presentViewController:viewController animated:YES completion:nil];
-                    } else {
-                        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"ApplePay cannot be used."];
-
-                        [self.commandDelegate sendPluginResult:pluginResult callbackId:dropInUIcallbackId];
-                        dropInUIcallbackId = nil;
-                    }
-                } else {
-                    if (threeDSecureOptions && [result.paymentMethod isKindOfClass:[BTCardNonce class]]) {
-                        BTCardNonce *cardNonce = (BTCardNonce *)result.paymentMethod;
-                        if (!cardNonce.threeDSecureInfo.liabilityShiftPossible && cardNonce.threeDSecureInfo.wasVerified) {
-                            CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString: @"3D Secure liability cannot be shifted"];
-                            [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
-                            return;
-                        } else if (!cardNonce.threeDSecureInfo.liabilityShifted && cardNonce.threeDSecureInfo.wasVerified) {
-                            CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString: @"3D Secure liability was not shifted"];
-                            [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
-                            return;
-                        }
-                    }
-                    
-                    NSDictionary *dictionary = [self getPaymentUINonceResult:result.paymentMethod];
-
-                    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:dictionary];
-
-                    [self.commandDelegate sendPluginResult:pluginResult callbackId:dropInUIcallbackId];
-                    dropInUIcallbackId = nil;
-                }
-            }
+            return;
         }
-    }];
 
-    [self.viewController presentViewController:dropIn animated:YES completion:nil];
+        paymentRequest.paymentSummaryItems = @[
+            [PKPaymentSummaryItem summaryItemWithLabel:description
+                                                amount:[NSDecimalNumber decimalNumberWithString: amount]]
+        ];
+        paymentRequest.supportedNetworks = @[
+            PKPaymentNetworkVisa,
+            PKPaymentNetworkMasterCard,
+            PKPaymentNetworkAmex,
+            PKPaymentNetworkDiscover
+        ];
+        paymentRequest.merchantCapabilities = PKMerchantCapability3DS;
+//        paymentRequest.requiredBillingContactFields = [PKContactFieldEmailAddress];
+
+        paymentRequest.currencyCode = currencyCode;
+        paymentRequest.countryCode = countryCode;
+
+        paymentRequest.merchantIdentifier = applePayMerchantID;
+
+        PKPaymentAuthorizationViewController *viewController = [[PKPaymentAuthorizationViewController alloc] initWithPaymentRequest:paymentRequest];
+        viewController.delegate = self;
+
+        applePaySuccess = NO;
+
+        /* display ApplePay ont the rootViewController */
+        UIViewController *rootViewController = [[[UIApplication sharedApplication] keyWindow] rootViewController];
+
+        [rootViewController presentViewController:viewController animated:YES completion:nil];
+    }];
 }
 
 #pragma mark - PKPaymentAuthorizationViewControllerDelegate
-- (void)paymentAuthorizationViewController:(PKPaymentAuthorizationViewController *)controller didAuthorizePayment:(PKPayment *)payment completion:(void (^)(PKPaymentAuthorizationStatus status))completion {
+- (void)paymentAuthorizationViewController:(PKPaymentAuthorizationViewController *)controller didAuthorizePayment:(PKPayment *)payment handler:(void (^)(PKPaymentAuthorizationResult * _Nonnull))completion {
     applePaySuccess = YES;
 
     BTApplePayClient *applePayClient = [[BTApplePayClient alloc] initWithAPIClient:self.braintreeClient];
+
     [applePayClient tokenizeApplePayPayment:payment completion:^(BTApplePayCardNonce *tokenizedApplePayPayment, NSError *error) {
         if (tokenizedApplePayPayment) {
             // On success, send nonce to your server for processing.
@@ -274,7 +200,7 @@ NSString *countryCode;
             dropInUIcallbackId = nil;
 
             // Then indicate success or failure via the completion callback, e.g.
-            completion(PKPaymentAuthorizationStatusSuccess);
+            completion([[PKPaymentAuthorizationResult alloc] initWithStatus:PKPaymentAuthorizationStatusSuccess errors:nil]);
         } else {
             // Tokenization failed. Check `error` for the cause of the failure.
             CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Apple Pay tokenization failed"];
@@ -283,9 +209,10 @@ NSString *countryCode;
             dropInUIcallbackId = nil;
 
             // Indicate failure via the completion callback:
-            completion(PKPaymentAuthorizationStatusFailure);
+            completion([[PKPaymentAuthorizationResult alloc] initWithStatus:PKPaymentAuthorizationStatusFailure errors:nil]);
         }
     }];
+
 }
 
 - (void)paymentAuthorizationViewControllerDidFinish:(PKPaymentAuthorizationViewController *)controller {
@@ -313,73 +240,40 @@ NSString *countryCode;
 - (NSDictionary*)getPaymentUINonceResult:(BTPaymentMethodNonce *)paymentMethodNonce {
 
     BTCardNonce *cardNonce;
-    BTPayPalAccountNonce *payPalAccountNonce;
     BTApplePayCardNonce *applePayCardNonce;
-    BTThreeDSecureCardNonce *threeDSecureCardNonce;
-    BTVenmoAccountNonce *venmoAccountNonce;
 
     if ([paymentMethodNonce isKindOfClass:[BTCardNonce class]]) {
         cardNonce = (BTCardNonce*)paymentMethodNonce;
-    }
-
-    if ([paymentMethodNonce isKindOfClass:[BTPayPalAccountNonce class]]) {
-        payPalAccountNonce = (BTPayPalAccountNonce*)paymentMethodNonce;
     }
 
     if ([paymentMethodNonce isKindOfClass:[BTApplePayCardNonce class]]) {
         applePayCardNonce = (BTApplePayCardNonce*)paymentMethodNonce;
     }
 
-    if ([paymentMethodNonce isKindOfClass:[BTThreeDSecureCardNonce class]]) {
-        threeDSecureCardNonce = (BTThreeDSecureCardNonce*)paymentMethodNonce;
-    }
+    NSDictionary *dictionary = @{
+        @"userCancelled": @NO,
 
-    if ([paymentMethodNonce isKindOfClass:[BTVenmoAccountNonce class]]) {
-        venmoAccountNonce = (BTVenmoAccountNonce*)paymentMethodNonce;
-    }
+        // Standard Fields
+        @"nonce": paymentMethodNonce.nonce,
+        @"type": paymentMethodNonce.type,
+        // @"localizedDescription": paymentMethodNonce.localizedDescription,
 
-    NSDictionary *dictionary = @{ @"userCancelled": @NO,
+        // BTCardNonce Fields
+        @"card": !cardNonce
+            ? [NSNull null]
+            : @{
+                @"lastTwo": cardNonce.lastTwo,
+                @"network": [self formatCardNetwork:cardNonce.cardNetwork]
+            },
+        // BTApplePayCardNonce
+        @"applePayCard": !applePayCardNonce
+            ? [NSNull null]
+            : @{},
 
-                                  // Standard Fields
-                                  @"nonce": paymentMethodNonce.nonce,
-                                  @"type": paymentMethodNonce.type,
-                                  @"localizedDescription": paymentMethodNonce.localizedDescription,
+        // BTThreeDSecureCardNonce Fields
+        @"deviceData": self.deviceDataCollector,
+    };
 
-                                  // BTCardNonce Fields
-                                  @"card": !cardNonce ? [NSNull null] : @{
-                                          @"lastTwo": cardNonce.lastTwo,
-                                          @"network": [self formatCardNetwork:cardNonce.cardNetwork]
-                                          },
-
-                                  // BTPayPalAccountNonce
-                                  @"payPalAccount": !payPalAccountNonce ? [NSNull null] : @{
-                                          @"email": payPalAccountNonce.email,
-                                          @"firstName": (payPalAccountNonce.firstName == nil ? [NSNull null] : payPalAccountNonce.firstName),
-                                          @"lastName": (payPalAccountNonce.lastName == nil ? [NSNull null] : payPalAccountNonce.lastName),
-                                          @"phone": (payPalAccountNonce.phone == nil ? [NSNull null] : payPalAccountNonce.phone),
-                                          //@"billingAddress" //TODO
-                                          //@"shippingAddress" //TODO
-                                          @"clientMetadataId":  (payPalAccountNonce.clientMetadataId == nil ? [NSNull null] : payPalAccountNonce.clientMetadataId),
-                                          @"payerId": (payPalAccountNonce.payerId == nil ? [NSNull null] : payPalAccountNonce.payerId),
-                                          },
-
-                                  // BTApplePayCardNonce
-                                  @"applePayCard": !applePayCardNonce ? [NSNull null] : @{
-                                          },
-
-                                  // BTThreeDSecureCardNonce Fields
-                                  @"threeDSecureInfo": !threeDSecureCardNonce ? [NSNull null] : @{
-                                          @"liabilityShifted": threeDSecureCardNonce.liabilityShifted ? @YES : @NO,
-                                          @"liabilityShiftPossible": threeDSecureCardNonce.liabilityShiftPossible ? @YES : @NO
-                                          },
-
-                                  // BTThreeDSecureCardNonce Fields
-                                  @"deviceData": self.deviceDataCollector,
-                                  // BTVenmoAccountNonce Fields
-                                  @"venmoAccount": !venmoAccountNonce ? [NSNull null] : @{
-                                          @"username": venmoAccountNonce.username
-                                          }
-                                  };
     return dictionary;
 }
 
