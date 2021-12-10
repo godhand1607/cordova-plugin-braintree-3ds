@@ -72,6 +72,15 @@ NSString * countryCode;
     [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
 }
 
+- (void)canMakePayments:(CDVInvokedUrlCommand *)command {
+
+    NSString * callbackId = command.callbackId;
+
+    CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:PKPaymentAuthorizationViewController.canMakePayments];
+
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
+}
+
 - (void)setupApplePay:(CDVInvokedUrlCommand *)command {
 
     // Ensure the client has been initialized.
@@ -87,7 +96,7 @@ NSString * countryCode;
         return;
     }
 
-    if ((PKPaymentAuthorizationViewController.canMakePayments) && ([PKPaymentAuthorizationViewController canMakePaymentsUsingNetworks:@[PKPaymentNetworkVisa, PKPaymentNetworkMasterCard, PKPaymentNetworkAmex, PKPaymentNetworkDiscover]])) {
+    if (PKPaymentAuthorizationViewController.canMakePayments) {
         applePayMerchantID = [command.arguments objectAtIndex:0];
         currencyCode = [command.arguments objectAtIndex:1];
         countryCode = [command.arguments objectAtIndex:2];

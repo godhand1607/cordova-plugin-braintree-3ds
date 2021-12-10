@@ -9,6 +9,7 @@
 
 @interface BraintreePlugin : CDVPlugin
 - (void)initialize:(CDVInvokedUrlCommand *)command;
+- (void)canMakePayments:(CDVInvokedUrlCommand *)command;
 - (void)setupApplePay:(CDVInvokedUrlCommand *)command;
 - (void)presentDropInPaymentUI:(CDVInvokedUrlCommand *)command;
 @end
