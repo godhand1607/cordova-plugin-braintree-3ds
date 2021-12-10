@@ -58,11 +58,15 @@ BraintreePlugin.setupApplePay = function setupApplePay(options, successCallback,
   if (typeof (options.country) !== 'string') {
     failureCallback('Apple Pay country must be provided');
   }
+  if (!Array.isArray(options.cardTypes)) {
+    failureCallback('Apple Pay supported card types must be provided');
+  }
 
   var pluginOptions = [
     options.merchantId,
     options.currency,
     options.country,
+    options.cardTypes
   ];
 
   exec(successCallback, failureCallback, PLUGIN_ID, 'setupApplePay', pluginOptions);

@@ -28,6 +28,7 @@ bool applePaySuccess;
 NSString * applePayMerchantID;
 NSString * currencyCode;
 NSString * countryCode;
+NSArray<PKPaymentNetwork> * supportedNetworks;
 
 #pragma mark - Cordova commands
 
@@ -90,8 +91,8 @@ NSString * countryCode;
         return;
     }
 
-    if ([command.arguments count] != 3) {
-        CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Merchant id, Currency code and Country code are required."];
+    if ([command.arguments count] != 4) {
+        CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Merchant id, Currency code, Country code, and Supported Card Types are required."];
         [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
         return;
     }
@@ -100,8 +101,8 @@ NSString * countryCode;
         applePayMerchantID = [command.arguments objectAtIndex:0];
         currencyCode = [command.arguments objectAtIndex:1];
         countryCode = [command.arguments objectAtIndex:2];
-
-        // applePayInited = YES;
+        NSSet * cardTypes = [command.arguments objectAtIndex:3];
+        supportedNetworks = [self mapCardTypes:cardTypes];
 
         CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
         [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
@@ -165,19 +166,12 @@ NSString * countryCode;
             [PKPaymentSummaryItem summaryItemWithLabel:description
                                                 amount:[NSDecimalNumber decimalNumberWithString: amount]]
         ];
-        paymentRequest.supportedNetworks = @[
-            PKPaymentNetworkVisa,
-            PKPaymentNetworkMasterCard,
-            PKPaymentNetworkAmex,
-            PKPaymentNetworkDiscover
-        ];
-        paymentRequest.merchantCapabilities = PKMerchantCapability3DS;
-//        paymentRequest.requiredBillingContactFields = [PKContactFieldEmailAddress];
-
+        paymentRequest.merchantIdentifier = applePayMerchantID;
         paymentRequest.currencyCode = currencyCode;
         paymentRequest.countryCode = countryCode;
-
-        paymentRequest.merchantIdentifier = applePayMerchantID;
+        paymentRequest.supportedNetworks = supportedNetworks;
+        paymentRequest.merchantCapabilities = PKMerchantCapability3DS;
+//        paymentRequest.requiredBillingContactFields = [PKContactFieldEmailAddress];
 
         PKPaymentAuthorizationViewController *viewController = [[PKPaymentAuthorizationViewController alloc] initWithPaymentRequest:paymentRequest];
         viewController.delegate = self;
@@ -284,6 +278,30 @@ NSString * countryCode;
     };
 
     return dictionary;
+}
+
+- (NSArray*)mapCardTypes:(NSSet*)cardTypes {
+    NSMutableArray * networks = [[NSMutableArray alloc] init];
+
+    for (NSString * cardType in cardTypes) {
+        PKPaymentNetwork network;
+
+        if ([cardType isEqualToString:@"visa"]) {
+            network = PKPaymentNetworkVisa;
+        } else if ([cardType isEqualToString:@"mastercard"]) {
+            network = PKPaymentNetworkMasterCard;
+        } else if ([cardType isEqualToString:@"amex"]) {
+            network = PKPaymentNetworkAmex;
+        } else {
+            NSLog(@"unsupported card type: %@", cardType);
+        }
+
+        if (network != nil) {
+            [networks addObject:network];
+        }
+    }
+
+    return networks;
 }
 
 /**
