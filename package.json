@@ -27,9 +27,6 @@
     "threeD secure"
   ],
   "license": "MIT",
-  "dependencies": {
-    "xcode": "^2.0.0"
-  },
   "main": "index.js",
   "author": "MedIT Solutions, fork Taracque and Engineerapart",
   "private": false,
