@@ -18,7 +18,7 @@
     </js-module>
 
     <!-- Android Configuration -->
-    <platform name="android">
+    <!-- <platform name="android">
 
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="BraintreePlugin">
@@ -45,7 +45,7 @@
 			</activity>
         </config-file>
 
-    </platform>
+    </platform> -->
 
     <!-- iOS Configuration -->
     <platform name="ios">
@@ -70,7 +70,6 @@
                 <pod name="Braintree/DataCollector" spec="$IOS_BRAINTREE_POD_VERSION" />
                 <pod name="Braintree/ThreeDSecure" spec="$IOS_BRAINTREE_POD_VERSION" />
                 <pod name="Braintree/ApplePay" spec="$IOS_BRAINTREE_POD_VERSION" />
-
             </pods>
         </podspec>
 
