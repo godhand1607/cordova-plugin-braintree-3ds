@@ -91,12 +91,14 @@ BraintreePlugin.presentDropInPaymentUI = function showDropInUI(options, successC
   if (!isNaN(options.amount * 1)) {
     options.amount = (options.amount * 1).toFixed(2);
   }
+  if (typeof (options.requiredShippingContactFields) === 'undefined') {
+    options.requiredShippingContactFields = [];
+  }
 
   var pluginOptions = [
     options.amount,
     options.primaryDescription,
-    options.threeDSecure,
-    options.googlePay,
+    options.requiredShippingContactFields
   ];
 
   exec(successCallback, failureCallback, PLUGIN_ID, 'presentDropInPaymentUI', pluginOptions);

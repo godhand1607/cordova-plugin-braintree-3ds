@@ -129,7 +129,7 @@ NSArray<PKPaymentNetwork> * supportedNetworks;
     }
 
     // Obtain the arguments.
-    NSString* amount = (NSString *)[command.arguments objectAtIndex:0];
+    NSString * amount = (NSString *)[command.arguments objectAtIndex:0];
     if ([amount isKindOfClass:[NSNumber class]]) {
         amount = [(NSNumber *)amount stringValue];
     }
@@ -139,15 +139,18 @@ NSArray<PKPaymentNetwork> * supportedNetworks;
         return;
     }
 
-    NSString* primaryDescription = [command.arguments objectAtIndex:1];
+    NSString * primaryDescription = [command.arguments objectAtIndex:1];
+
+    NSSet * fields = [command.arguments objectAtIndex:2];
+    NSSet<PKContactField> * shippingContactFields = [self mapContactFields:fields];
 
     // Save off the Cordova callback ID so it can be used in the completion handlers.
     dropInUIcallbackId = command.callbackId;
 
-    [self presentApplePayWithDescription:primaryDescription andAmount:amount];
+    [self presentApplePayWithDescription:primaryDescription amount:amount andRequiredShippingContactFields:shippingContactFields];
 }
 
-- (void)presentApplePayWithDescription:(NSString*)description andAmount:(NSString*)amount {
+- (void)presentApplePayWithDescription:(NSString*)description amount:(NSString*)amount andRequiredShippingContactFields:(NSSet<PKContactField> *)requiredShippingContactFields {
 
     BTApplePayClient *applePayClient = [[BTApplePayClient alloc] initWithAPIClient:self.braintreeClient];
     [applePayClient paymentRequest:^(PKPaymentRequest * _Nullable paymentRequest, NSError * _Nullable error) {
@@ -171,7 +174,8 @@ NSArray<PKPaymentNetwork> * supportedNetworks;
         paymentRequest.countryCode = countryCode;
         paymentRequest.supportedNetworks = supportedNetworks;
         paymentRequest.merchantCapabilities = PKMerchantCapability3DS;
-//        paymentRequest.requiredBillingContactFields = [PKContactFieldEmailAddress];
+        // paymentRequest.requiredBillingContactFields = [NSSet setWithArray:@[PKContactFieldName, PKContactFieldEmailAddress, PKContactFieldPhoneNumber]];
+        paymentRequest.requiredShippingContactFields = requiredShippingContactFields;
 
         PKPaymentAuthorizationViewController *viewController = [[PKPaymentAuthorizationViewController alloc] initWithPaymentRequest:paymentRequest];
         viewController.delegate = self;
@@ -191,13 +195,26 @@ NSArray<PKPaymentNetwork> * supportedNetworks;
 
     BTApplePayClient *applePayClient = [[BTApplePayClient alloc] initWithAPIClient:self.braintreeClient];
 
+    NSLog(@"%@", [[payment shippingContact] name]);
+    NSLog(@"%@", [[payment shippingContact] emailAddress]);
+    NSLog(@"%@", [[payment shippingContact] phoneNumber]);
+
+    NSMutableDictionary * contactInfo = [[NSMutableDictionary alloc] init];
+    [contactInfo setDictionary:@{
+        @"name": [[payment shippingContact] name],
+        @"emailAddress": [[payment shippingContact] emailAddress],
+        @"phoneNumber": [[payment shippingContact] phoneNumber],
+    }];
+
     [applePayClient tokenizeApplePayPayment:payment completion:^(BTApplePayCardNonce *tokenizedApplePayPayment, NSError *error) {
         if (tokenizedApplePayPayment) {
             // On success, send nonce to your server for processing.
-            NSDictionary *dictionary = [self getPaymentUINonceResult:tokenizedApplePayPayment];
+            NSDictionary * paymentInfo = [self getPaymentUINonceResult:tokenizedApplePayPayment];
+
+            [contactInfo addEntriesFromDictionary:paymentInfo];
 
             CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
-                                                          messageAsDictionary:dictionary];
+                                                          messageAsDictionary:contactInfo];
 
             [self.commandDelegate sendPluginResult:pluginResult callbackId:dropInUIcallbackId];
             dropInUIcallbackId = nil;
@@ -302,6 +319,30 @@ NSArray<PKPaymentNetwork> * supportedNetworks;
     }
 
     return networks;
+}
+
+- (NSSet<PKContactField>*)mapContactFields:(NSSet*)contactFields {
+    NSMutableArray * fields = [[NSMutableArray alloc] init];
+
+    for (NSString * contactField in contactFields) {
+        PKContactField field;
+
+        if ([contactField isEqualToString:@"name"]) {
+            field = PKContactFieldName;
+        } else if ([contactField isEqualToString:@"emailAddress"]) {
+            field = PKContactFieldEmailAddress;
+        } else if ([contactField isEqualToString:@"phoneNumber"]) {
+            field = PKContactFieldPhoneNumber;
+        } else {
+            NSLog(@"unsupported contact field: %@", contactField);
+        }
+
+        if (field != nil) {
+            [fields addObject:field];
+        }
+    }
+
+    return [NSSet setWithArray:fields];
 }
 
 /**
