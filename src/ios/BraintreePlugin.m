@@ -195,15 +195,12 @@ NSArray<PKPaymentNetwork> * supportedNetworks;
 
     BTApplePayClient *applePayClient = [[BTApplePayClient alloc] initWithAPIClient:self.braintreeClient];
 
-    NSLog(@"%@", [[payment shippingContact] name]);
-    NSLog(@"%@", [[payment shippingContact] emailAddress]);
-    NSLog(@"%@", [[payment shippingContact] phoneNumber]);
-
     NSMutableDictionary * contactInfo = [[NSMutableDictionary alloc] init];
     [contactInfo setDictionary:@{
-        @"name": [[payment shippingContact] name],
-        @"emailAddress": [[payment shippingContact] emailAddress],
-        @"phoneNumber": [[payment shippingContact] phoneNumber],
+        @"firstName": ![[[payment shippingContact] name] givenName] ? [NSNull null] : [[[payment shippingContact] name] givenName],
+        @"lastName": ![[[payment shippingContact] name] familyName] ? [NSNull null] : [[[payment shippingContact] name] familyName],
+        @"emailAddress": ![[payment shippingContact] emailAddress] ? [NSNull null] : [[payment shippingContact] emailAddress],
+        @"phoneNumber": ![[payment shippingContact] phoneNumber] ? [NSNull null] : [[payment shippingContact] phoneNumber]
     }];
 
     [applePayClient tokenizeApplePayPayment:payment completion:^(BTApplePayCardNonce *tokenizedApplePayPayment, NSError *error) {
