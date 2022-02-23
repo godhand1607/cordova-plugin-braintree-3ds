@@ -200,7 +200,7 @@ NSArray<PKPaymentNetwork> * supportedNetworks;
         @"firstName": ![[[payment shippingContact] name] givenName] ? [NSNull null] : [[[payment shippingContact] name] givenName],
         @"lastName": ![[[payment shippingContact] name] familyName] ? [NSNull null] : [[[payment shippingContact] name] familyName],
         @"emailAddress": ![[payment shippingContact] emailAddress] ? [NSNull null] : [[payment shippingContact] emailAddress],
-        @"phoneNumber": ![[payment shippingContact] phoneNumber] ? [NSNull null] : [[payment shippingContact] phoneNumber]
+        @"phoneNumber": ![[payment shippingContact] phoneNumber] ? [NSNull null] : [[[payment shippingContact] phoneNumber] stringValue]
     }];
 
     [applePayClient tokenizeApplePayPayment:payment completion:^(BTApplePayCardNonce *tokenizedApplePayPayment, NSError *error) {
