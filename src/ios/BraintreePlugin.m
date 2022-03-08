@@ -161,15 +161,15 @@ NSString * threeDResultNonce;
 - (void)verifyCard:(CDVInvokedUrlCommand *)command {
     BTThreeDSecureRequest * threeDSecureRequest = [[BTThreeDSecureRequest alloc] init];
 
-    [threeDSecureRequest setAmount:[command.arguments objectAtIndex:0]];
-    [threeDSecureRequest setNonce:[command.arguments objectAtIndex:1]];
-    [threeDSecureRequest setEmail:[command.arguments objectAtIndex:2]];
+    [threeDSecureRequest setAmount: [NSDecimalNumber decimalNumberWithString: (NSString *)[command.arguments objectAtIndex:0]]];
+    [threeDSecureRequest setNonce: (NSString *)[command.arguments objectAtIndex:1]];
+    [threeDSecureRequest setEmail: (NSString *)[command.arguments objectAtIndex:2]];
 
     BTThreeDSecurePostalAddress * address = [[BTThreeDSecurePostalAddress alloc] init];
-    [address setGivenName:[command.arguments objectAtIndex:3]];
-    [address setSurname:[command.arguments objectAtIndex:4]];
-    [address setPhoneNumber:[command.arguments objectAtIndex:5]];
-    [address setCountryCodeAlpha2:[command.arguments objectAtIndex:6]];
+    [address setGivenName: (NSString *)[command.arguments objectAtIndex:3]];
+    [address setSurname: (NSString *)[command.arguments objectAtIndex:4]];
+    [address setPhoneNumber: (NSString *)[command.arguments objectAtIndex:5]];
+    [address setCountryCodeAlpha2: (NSString *)[command.arguments objectAtIndex:6]];
     [threeDSecureRequest setBillingAddress:address];
 
     [threeDSecureRequest setVersionRequested:BTThreeDSecureVersion2];
@@ -178,8 +178,10 @@ NSString * threeDResultNonce;
 
     [self.paymentFlowDriver startPaymentFlow:threeDSecureRequest completion:^(BTPaymentFlowResult * _Nullable result, NSError * _Nullable error) {
 
+        NSLog(@"completion");
         if (error != nil) {
             // TODO: Error handling
+            NSLog(@"Error: %@", [error localizedDescription]);
             return;
         }
 
@@ -203,7 +205,7 @@ NSString * threeDResultNonce;
     [applePayClient paymentRequest:^(PKPaymentRequest * _Nullable paymentRequest, NSError * _Nullable error) {
 
         if (error != nil) {
-            NSLog(@"Error: %@",[error localizedDescription]);
+            NSLog(@"Error: %@", [error localizedDescription]);
             CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
 
             [self.commandDelegate sendPluginResult:pluginResult callbackId:dropInUIcallbackId];
