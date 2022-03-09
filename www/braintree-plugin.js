@@ -104,6 +104,22 @@ BraintreePlugin.presentDropInPaymentUI = function showDropInUI(options, successC
   exec(successCallback, failureCallback, PLUGIN_ID, 'presentDropInPaymentUI', pluginOptions);
 };
 
+BraintreePlugin.verifyCard = function showDropInUI(options, successCallback, failureCallback) {
+
+    var pluginOptions = [
+      options.amount,
+      options.nonce,
+      options.email,
+      options.billingAddress.givenName,
+      options.billingAddress.surname,
+      options.billingAddress.phoneNumber,
+      options.billingAddress.countryCodeAlpha2,
+    ];
+
+    exec(successCallback, failureCallback, PLUGIN_ID, 'verifyCard', pluginOptions);
+};
+
+
 BraintreePlugin.paypalProcess = function paypalProcess(amount, currency, env, successCallback, failureCallback) {
   exec(successCallback, failureCallback, PLUGIN_ID, 'paypalProcess', [amount, currency, env]);
 };
