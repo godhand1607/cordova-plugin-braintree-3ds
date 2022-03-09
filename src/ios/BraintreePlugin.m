@@ -175,13 +175,36 @@ NSString * threeDResultNonce;
     [threeDSecureRequest setVersionRequested:BTThreeDSecureVersion2];
     [threeDSecureRequest setThreeDSecureRequestDelegate:self];
 
+    // Reset cached nonce
+    threeDResultNonce = nil;
 
     [self.paymentFlowDriver startPaymentFlow:threeDSecureRequest completion:^(BTPaymentFlowResult * _Nullable result, NSError * _Nullable error) {
-
-        NSLog(@"completion");
         if (error != nil) {
-            // TODO: Error handling
-            NSLog(@"Error: %@", [error localizedDescription]);
+            NSLog(@"Error Code: %zd", [error code]);
+            NSLog(@"Error Desc: %@", [error localizedDescription]);
+
+            // Match the canceled flow with BT's JS SDK
+            if (error.code == BTPaymentFlowDriverErrorTypeCanceled) {
+                NSDictionary *dictionary = @{
+                    @"nonce":  threeDResultNonce,
+                    @"deviceData": self.deviceDataCollector
+                };
+
+                CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                                              messageAsDictionary:dictionary];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+
+            } else {
+                NSDictionary *dictionary = @{
+                    @"nonce": threeDResultNonce,
+                    @"error": [error localizedDescription]
+                };
+
+                CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                                              messageAsDictionary:dictionary];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            }
+
             return;
         }
 
