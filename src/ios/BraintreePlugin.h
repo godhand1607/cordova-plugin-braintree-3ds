@@ -12,4 +12,5 @@
 - (void)canMakePayments:(CDVInvokedUrlCommand *)command;
 - (void)setupApplePay:(CDVInvokedUrlCommand *)command;
 - (void)presentDropInPaymentUI:(CDVInvokedUrlCommand *)command;
+- (void)verifyCard:(CDVInvokedUrlCommand *)command;
 @end

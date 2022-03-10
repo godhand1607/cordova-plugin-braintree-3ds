@@ -11,12 +11,14 @@
 #import <Braintree/BTCardNonce.h>
 #import <Braintree/BraintreeApplePay.h>
 #import <Braintree/BraintreeDataCollector.h>
+#import <Braintree/BraintreeThreeDSecure.h>
 
-@interface BraintreePlugin() <PKPaymentAuthorizationViewControllerDelegate>
+@interface BraintreePlugin() <PKPaymentAuthorizationViewControllerDelegate, BTViewControllerPresentingDelegate, BTThreeDSecureRequestDelegate>
 
 @property (nonatomic, strong) BTAPIClient * braintreeClient;
 @property (nonatomic, strong) BTDataCollector * dataCollector;
 @property (nonatomic, strong) NSString * _Nonnull deviceDataCollector;
+@property (nonatomic, strong) BTPaymentFlowDriver * paymentFlowDriver;
 @property NSString * token;
 
 @end
@@ -29,6 +31,9 @@ NSString * applePayMerchantID;
 NSString * currencyCode;
 NSString * countryCode;
 NSArray<PKPaymentNetwork> * supportedNetworks;
+
+NSString * threeDResultNonce;
+
 
 #pragma mark - Cordova commands
 
@@ -63,6 +68,9 @@ NSArray<PKPaymentNetwork> * supportedNetworks;
         // Save deviceData
         self.deviceDataCollector = deviceDataCollector;
     }];
+
+    self.paymentFlowDriver = [[BTPaymentFlowDriver alloc] initWithAPIClient:self.braintreeClient];
+    [self.paymentFlowDriver setViewControllerPresentingDelegate:self];
 
 //    NSString *bundle_id = [NSBundle mainBundle].bundleIdentifier;
 //    bundle_id = [bundle_id stringByAppendingString:@".payments"];
@@ -150,13 +158,77 @@ NSArray<PKPaymentNetwork> * supportedNetworks;
     [self presentApplePayWithDescription:primaryDescription amount:amount andRequiredShippingContactFields:shippingContactFields];
 }
 
+- (void)verifyCard:(CDVInvokedUrlCommand *)command {
+    BTThreeDSecureRequest * threeDSecureRequest = [[BTThreeDSecureRequest alloc] init];
+
+    [threeDSecureRequest setAmount: [NSDecimalNumber decimalNumberWithString: (NSString *)[command.arguments objectAtIndex:0]]];
+    [threeDSecureRequest setNonce: (NSString *)[command.arguments objectAtIndex:1]];
+    [threeDSecureRequest setEmail: (NSString *)[command.arguments objectAtIndex:2]];
+
+    BTThreeDSecurePostalAddress * address = [[BTThreeDSecurePostalAddress alloc] init];
+    [address setGivenName: (NSString *)[command.arguments objectAtIndex:3]];
+    [address setSurname: (NSString *)[command.arguments objectAtIndex:4]];
+    [address setPhoneNumber: (NSString *)[command.arguments objectAtIndex:5]];
+    [address setCountryCodeAlpha2: (NSString *)[command.arguments objectAtIndex:6]];
+    [threeDSecureRequest setBillingAddress:address];
+
+    [threeDSecureRequest setVersionRequested:BTThreeDSecureVersion2];
+    [threeDSecureRequest setThreeDSecureRequestDelegate:self];
+
+    // Reset cached nonce
+    threeDResultNonce = nil;
+
+    [self.paymentFlowDriver startPaymentFlow:threeDSecureRequest completion:^(BTPaymentFlowResult * _Nullable result, NSError * _Nullable error) {
+        if (error != nil) {
+            NSLog(@"Error Code: %zd", [error code]);
+            NSLog(@"Error Desc: %@", [error localizedDescription]);
+
+            // Match the canceled flow with BT's JS SDK
+            if (error.code == BTPaymentFlowDriverErrorTypeCanceled) {
+                NSDictionary *dictionary = @{
+                    @"nonce":  threeDResultNonce,
+                    @"deviceData": self.deviceDataCollector
+                };
+
+                CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                                              messageAsDictionary:dictionary];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+
+            } else {
+                NSDictionary *dictionary = @{
+                    @"nonce": threeDResultNonce,
+                    @"error": [error localizedDescription]
+                };
+
+                CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                                              messageAsDictionary:dictionary];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            }
+
+            return;
+        }
+
+        BTThreeDSecureResult * threeDSecureResult = (BTThreeDSecureResult *)result;
+
+        NSDictionary *dictionary = @{
+            @"nonce":  threeDSecureResult.tokenizedCard.nonce,
+            @"deviceData": self.deviceDataCollector
+        };
+
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                                      messageAsDictionary:dictionary];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+
+    }];
+}
+
 - (void)presentApplePayWithDescription:(NSString*)description amount:(NSString*)amount andRequiredShippingContactFields:(NSSet<PKContactField> *)requiredShippingContactFields {
 
     BTApplePayClient *applePayClient = [[BTApplePayClient alloc] initWithAPIClient:self.braintreeClient];
     [applePayClient paymentRequest:^(PKPaymentRequest * _Nullable paymentRequest, NSError * _Nullable error) {
 
         if (error != nil) {
-            NSLog(@"Error: %@",[error localizedDescription]);
+            NSLog(@"Error: %@", [error localizedDescription]);
             CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
 
             [self.commandDelegate sendPluginResult:pluginResult callbackId:dropInUIcallbackId];
@@ -188,6 +260,7 @@ NSArray<PKPaymentNetwork> * supportedNetworks;
         [rootViewController presentViewController:viewController animated:YES completion:nil];
     }];
 }
+
 
 #pragma mark - PKPaymentAuthorizationViewControllerDelegate
 - (void)paymentAuthorizationViewController:(PKPaymentAuthorizationViewController *)controller didAuthorizePayment:(PKPayment *)payment handler:(void (^)(PKPaymentAuthorizationResult * _Nonnull))completion {
@@ -246,6 +319,25 @@ NSArray<PKPaymentNetwork> * supportedNetworks;
         [self.commandDelegate sendPluginResult:pluginResult callbackId:dropInUIcallbackId];
         dropInUIcallbackId = nil;
     }
+}
+
+
+#pragma mark - BTViewControllerPresentingDelegate
+- (void)paymentDriver:(id)driver requestsPresentationOfViewController:(UIViewController *)viewController {
+    UIViewController *rootViewController = [[[UIApplication sharedApplication] keyWindow] rootViewController];
+    [rootViewController presentViewController:viewController animated:YES completion:nil];
+}
+
+- (void)paymentDriver:(id)driver requestsDismissalOfViewController:(UIViewController *)viewController {
+    UIViewController *rootViewController = [[[UIApplication sharedApplication] keyWindow] rootViewController];
+    [rootViewController dismissViewControllerAnimated:YES completion:nil];
+}
+
+
+#pragma mark - BTThreeDSecureRequestDelegate
+- (void)onLookupComplete:(BTThreeDSecureRequest *)request lookupResult:(BTThreeDSecureResult *)result next:(void(^)(void))next {
+    threeDResultNonce = result.tokenizedCard.nonce;
+    next();
 }
 
 
