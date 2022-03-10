@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-braintree-3ds",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "A Cordova plugin for the Braintree mobile payment processing SDK with 3D secure and Data Collecting.",
   "cordova": {
     "id": "cordova-plugin-braintree-3ds",
