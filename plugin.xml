@@ -2,7 +2,7 @@
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
         id="cordova-plugin-braintree-3ds"
-        version="3.1">
+        version="4.0">
 
     <name>Braintree Plugin</name>
 
@@ -18,34 +18,26 @@
     </js-module>
 
     <!-- Android Configuration -->
-    <!-- <platform name="android">
-
+    <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="BraintreePlugin">
-                <param name="android-package" value="net.justincredible.BraintreePlugin" />
+                <param name="android-package" value="org.apache.cordova.braintree.BraintreePlugin" />
             </feature>
         </config-file>
 
-        <source-file src="src/android/BraintreePlugin.java" target-dir="src/net/justincredible" />
+        <source-file src="src/android/BraintreePlugin.java" target-dir="src/org/apache/cordova/braintree" />
 
-        <framework src="com.android.support:support-v13:27.+" />
-        <framework src="com.android.support:appcompat-v7:27.+" />
-        <framework src="src/android/build-extras.gradle" custom="true" type="gradleReference" />
+        <framework src="com.braintreepayments.api:google-pay:4.15.0" />
 
-        <config-file target="AndroidManifest.xml" parent="application">
-            <activity android:name="com.braintreepayments.api.threedsecure.ThreeDSecureWebViewActivity" />
-            <activity android:name="com.braintreepayments.api.BraintreePaymentActivity" />
-			<activity android:name="com.braintreepayments.api.BraintreeBrowserSwitchActivity" android:launchMode="singleTask">
-				<intent-filter>
-					<action android:name="android.intent.action.VIEW" />
-					<category android:name="android.intent.category.DEFAULT" />
-					<category android:name="android.intent.category.BROWSABLE" />
-					<data android:scheme="${applicationId}.braintree" />
-				</intent-filter>
-			</activity>
+        <config-file target="AndroidManifest.xml" parent="/manifest/application/activity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="${applicationId}.braintree" />
+            </intent-filter>
         </config-file>
-
-    </platform> -->
+    </platform>
 
     <!-- iOS Configuration -->
     <platform name="ios">
