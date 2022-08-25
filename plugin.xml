@@ -22,12 +22,14 @@
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="BraintreePlugin">
                 <param name="android-package" value="org.apache.cordova.braintree.BraintreePlugin" />
+                <param name="onload" value="true" />
             </feature>
         </config-file>
 
         <source-file src="src/android/BraintreePlugin.java" target-dir="src/org/apache/cordova/braintree" />
 
         <framework src="com.braintreepayments.api:google-pay:4.15.0" />
+        <framework src="com.braintreepayments.api:data-collector:4.15.0" />
 
         <config-file target="AndroidManifest.xml" parent="/manifest/application/activity">
             <intent-filter>

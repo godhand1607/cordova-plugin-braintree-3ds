@@ -12,6 +12,7 @@ var PLUGIN_ID = 'BraintreePlugin';
  */
 var BraintreePlugin = {};
 
+
 /**
  * Used to initialize the Braintree client.
  *
@@ -72,6 +73,7 @@ BraintreePlugin.setupApplePay = function setupApplePay(options, successCallback,
   exec(successCallback, failureCallback, PLUGIN_ID, 'setupApplePay', pluginOptions);
 };
 
+
 /**
  * Shows Braintree's drop-in payment UI.
  *
@@ -104,7 +106,44 @@ BraintreePlugin.presentDropInPaymentUI = function showDropInUI(options, successC
   exec(successCallback, failureCallback, PLUGIN_ID, 'presentDropInPaymentUI', pluginOptions);
 };
 
-BraintreePlugin.verifyCard = function showDropInUI(options, successCallback, failureCallback) {
+
+/**
+ *
+ * @param {*} options
+ * @param {*} successCallback
+ * @param {*} failureCallback
+ */
+BraintreePlugin.launchGooglePay = function launchGooglePay(options, successCallback, failureCallback) {
+
+    if (!options) {
+      options = {};
+    }
+
+    if (typeof (options.amount) === 'undefined') {
+      options.amount = '0.00';
+    }
+    if (!isNaN(options.amount * 1)) {
+      options.amount = (options.amount * 1).toFixed(2);
+    }
+
+
+    var pluginOptions = [
+      options.amount,
+      options.currency,
+      options.environment
+    ];
+
+    exec(successCallback, failureCallback, PLUGIN_ID, 'launchGooglePay', pluginOptions);
+};
+
+
+/**
+ *
+ * @param {*} options
+ * @param {*} successCallback
+ * @param {*} failureCallback
+ */
+BraintreePlugin.verifyCard = function verifyCard(options, successCallback, failureCallback) {
 
     var pluginOptions = [
       options.amount,
@@ -117,15 +156,6 @@ BraintreePlugin.verifyCard = function showDropInUI(options, successCallback, fai
     ];
 
     exec(successCallback, failureCallback, PLUGIN_ID, 'verifyCard', pluginOptions);
-};
-
-
-BraintreePlugin.paypalProcess = function paypalProcess(amount, currency, env, successCallback, failureCallback) {
-  exec(successCallback, failureCallback, PLUGIN_ID, 'paypalProcess', [amount, currency, env]);
-};
-
-BraintreePlugin.paypalProcessVaulted = function paypalProcessVaulted(env, successCallback, failureCallback) {
-  exec(successCallback, failureCallback, PLUGIN_ID, 'paypalProcessVaulted', [env]);
 };
 
 
