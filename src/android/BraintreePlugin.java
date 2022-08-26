@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.braintreepayments.api.BraintreeClient;
+import com.braintreepayments.api.ClientTokenCallback;
+import com.braintreepayments.api.ClientTokenProvider;
 import com.braintreepayments.api.DataCollector;
 import com.braintreepayments.api.GooglePayCapabilities;
 import com.braintreepayments.api.GooglePayCardNonce;
@@ -32,12 +34,13 @@ import com.google.android.gms.wallet.TransactionInfo;
 import com.google.android.gms.wallet.WalletConstants;
 
 
-public final class BraintreePlugin extends CordovaPlugin implements GooglePayListener {
+public final class BraintreePlugin extends CordovaPlugin implements GooglePayListener, ClientTokenProvider {
 
     private static final String TAG = "BraintreePlugin";
 
     private CallbackContext _callbackContext = null;
     private String deviceDataCollector = null;
+    private String temporaryToken = null;
 
     private BraintreeClient braintreeClient;
     private GooglePayClient googlePayClient;
@@ -60,7 +63,7 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
         cordova.getActivity().runOnUiThread(() -> {
             Log.i(TAG, "Initialize onUiThread start");
 
-            braintreeClient = new BraintreeClient(cordova.getActivity(), "<braintree_token_here>");
+            braintreeClient = new BraintreeClient(cordova.getActivity(), this);
 
             googlePayClient = new GooglePayClient(cordova.getActivity(), braintreeClient);
             googlePayClient.setListener(this);
@@ -85,7 +88,9 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
         _callbackContext = callbackContext;
 
         try {
-            if (action.equals("canMakePayments")) {
+            if (action.equals("initialize")) {
+                this.initializeBT(args);
+            } else if (action.equals("canMakePayments")) {
                 this.canMakePayments(args);
             } else if (action.equals("launchGooglePay")) {
                 this.launchGooglePay(args);
@@ -97,6 +102,25 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
         }
 
         return true;
+    }
+
+    private void initializeBT(final JSONArray args) throws Exception {
+
+        if (args.length() != 1) {
+            _callbackContext.error("A token is required.");
+            return;
+        }
+
+        String token = args.getString(0);
+
+        if (token == null || token.equals("")) {
+            _callbackContext.error("A token is required.");
+            return;
+        }
+
+        temporaryToken = token;
+
+        _callbackContext.success();
     }
 
     private void canMakePayments(final JSONArray args) throws JSONException {
@@ -212,4 +236,12 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
         _callbackContext = null;
     }
 
+    @Override
+    public void getClientToken(@NonNull ClientTokenCallback callback) {
+        if (temporaryToken != null) {
+            callback.onSuccess(temporaryToken);
+        } else {
+            callback.onFailure(new Exception("Null token"));
+        }
+    }
 }
