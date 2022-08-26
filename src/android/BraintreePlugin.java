@@ -169,12 +169,22 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
         });
     }
 
+    private boolean hasElement(JSONArray requiredContactFields, String key) throws JSONException {
+        for (int i = 0 ; i < requiredContactFields.length(); i++) {
+            boolean isMatch = requiredContactFields.getString(i) == key;
+            if (isMatch) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private void launchGooglePay(final JSONArray args) throws JSONException {
         String amount = args.getString(0);
         String currency = args.getString(1);
         String environment = args.getString(2);
-//        boolean emailRequired = args.getJSONArray(3);
+        JSONArray requiredContactFields = args.getJSONArray(3);
+        JSONArray cardTypes = args.getJSONArray(4);
 
         GooglePayRequest googlePayRequest = new GooglePayRequest();
         googlePayRequest.setEnvironment(environment);
@@ -183,14 +193,11 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
             .setTotalPrice(amount)
             .setTotalPriceStatus(WalletConstants.TOTAL_PRICE_STATUS_FINAL)
             .build());
-//        googlePayRequest.setAllowPrepaidCards(Settings.areGooglePayPrepaidCardsAllowed(activity));
-        googlePayRequest.setEmailRequired(true);
+        googlePayRequest.setEmailRequired(this.hasElement(requiredContactFields, "emailAddress"));
         googlePayRequest.setBillingAddressRequired(true);
         googlePayRequest.setBillingAddressFormat(WalletConstants.BILLING_ADDRESS_FORMAT_FULL);
-        googlePayRequest.setPhoneNumberRequired(true);
-
-//        googlePayRequest.getAllowedPaymentMethod();
-//        googlePayRequest.setAllowedCardNetworks();
+        googlePayRequest.setPhoneNumberRequired(this.hasElement(requiredContactFields, "phoneNumber"));
+        // googlePayRequest.setAllowedCardNetworks("CARD", cardTypes);
 
         this.collectDeviceData();
 
@@ -226,11 +233,15 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
 
             Map<String, Object> resultMap = new HashMap<String, Object>();
             resultMap.put("userCancelled", true);
-            _callbackContext.success(new JSONObject(resultMap));
-
+            if (_callbackContext != null) {
+                _callbackContext.success(new JSONObject(resultMap));
+            }
         } else {
             Log.e(TAG, "onGooglePayFailure: " + error.getMessage() + "\n" + error.getStackTrace());
-            _callbackContext.error("onGooglePayFailure: " + error.getMessage());
+
+            if (_callbackContext != null) {
+                _callbackContext.error("onGooglePayFailure: " + error.getMessage());
+            }
         }
 
         _callbackContext = null;

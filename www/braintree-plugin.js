@@ -130,7 +130,9 @@ BraintreePlugin.launchGooglePay = function launchGooglePay(options, successCallb
     var pluginOptions = [
       options.amount,
       options.currency,
-      options.environment
+      options.environment,
+      options.requiredShippingContactFields,
+      options.cardTypes
     ];
 
     exec(successCallback, failureCallback, PLUGIN_ID, 'launchGooglePay', pluginOptions);
