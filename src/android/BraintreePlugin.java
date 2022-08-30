@@ -135,20 +135,20 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
             if (GooglePayCapabilities.isGooglePayEnabled(cordova.getActivity(), configuration)) {
 
                 ReadyForGooglePayRequest readyForGooglePayRequest = new ReadyForGooglePayRequest();
-                readyForGooglePayRequest.setExistingPaymentMethodRequired(false);
+                readyForGooglePayRequest.setExistingPaymentMethodRequired(true);
 
                 googlePayClient.isReadyToPay(cordova.getActivity(), readyForGooglePayRequest, (isReadyToPay, e) -> {
-                    if (isReadyToPay) {
-                        _callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, true));
-                    } else {
+                    if (e != null) {
                         Log.e(TAG, "canMakePayments: googlePayClient.isReadyToPay -> " + e.getMessage() + "\n" + e.getStackTrace());
 
                         // showDialog("Google Payments are not available. The following issues could be the cause:\n\n" +
                         //         "No user is logged in to the device.\n\n" +
                         //         "Google Play Services is missing or out of date.");
-
                         _callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, false));
+                        return;
                     }
+
+                    _callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, isReadyToPay));
                 });
             } else {
                 Log.e(TAG, "canMakePayments: GooglePayCapabilities.isGooglePayEnabled -> false");
@@ -197,7 +197,10 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
         googlePayRequest.setBillingAddressRequired(true);
         googlePayRequest.setBillingAddressFormat(WalletConstants.BILLING_ADDRESS_FORMAT_FULL);
         googlePayRequest.setPhoneNumberRequired(this.hasElement(requiredContactFields, "phoneNumber"));
-        // googlePayRequest.setAllowedCardNetworks("CARD", cardTypes);
+//        googlePayRequest.setGoogleMerchantId();
+//        googlePayRequest.setAllowedPaymentMethod("CARD");
+        googlePayRequest.setAllowedCardNetworks("CARD", cardTypes);
+        Log.i(TAG, googlePayRequest.toJson());
 
         this.collectDeviceData();
 
