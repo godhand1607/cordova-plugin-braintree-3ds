@@ -4,6 +4,7 @@
         id="cordova-plugin-braintree-3ds"
         version="4.0">
 
+
     <name>Braintree Plugin</name>
 
     <description>
@@ -58,6 +59,9 @@
         <header-file src="src/ios/BraintreePlugin.h" />
         <source-file src="src/ios/BraintreePlugin.m" />
 
+        <header-file src="src/ios/AppDelegate+BraintreePlugin.h" />
+        <source-file src="src/ios/AppDelegate+BraintreePlugin.m" />
+
         <podspec>
             <config>
                 <source url="https://cdn.cocoapods.org/" />
@@ -69,6 +73,21 @@
                 <pod name="Braintree/ApplePay" spec="$IOS_BRAINTREE_POD_VERSION" />
             </pods>
         </podspec>
+
+        <config-file target="*-Info.plist" parent="CFBundleURLTypes">
+            <array>
+                <dict>
+                    <key>CFBundleTypeRole</key>
+                    <string>Editor</string>
+                    <key>CFBundleURLName</key>
+                    <string></string>
+                    <key>CFBundleURLSchemes</key>
+                    <array>
+                        <string>$PACKAGE_NAME.braintree</string>
+                    </array>
+                </dict>
+            </array>
+        </config-file>
 
     </platform>
 
