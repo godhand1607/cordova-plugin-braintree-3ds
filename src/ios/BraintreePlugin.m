@@ -72,11 +72,6 @@ NSString * threeDResultNonce;
     self.paymentFlowDriver = [[BTPaymentFlowDriver alloc] initWithAPIClient:self.braintreeClient];
     [self.paymentFlowDriver setViewControllerPresentingDelegate:self];
 
-//    NSString *bundle_id = [NSBundle mainBundle].bundleIdentifier;
-//    bundle_id = [bundle_id stringByAppendingString:@".payments"];
-//
-//    [BTAppContextSwitcher setReturnURLScheme:bundle_id];
-
     CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
 }
