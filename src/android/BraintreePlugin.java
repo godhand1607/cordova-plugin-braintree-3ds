@@ -185,6 +185,9 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
         String environment = args.getString(2);
         JSONArray requiredContactFields = args.getJSONArray(3);
         JSONArray cardTypes = args.getJSONArray(4);
+        JSONArray authMethods = new JSONArray()
+            .put("PAN_ONLY")
+            .put("CRYPTOGRAM_3DS");
 
         GooglePayRequest googlePayRequest = new GooglePayRequest();
         googlePayRequest.setEnvironment(environment);
@@ -199,10 +202,10 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
         googlePayRequest.setPhoneNumberRequired(this.hasElement(requiredContactFields, "phoneNumber"));
 //        googlePayRequest.setGoogleMerchantId();
 //        googlePayRequest.setAllowedPaymentMethod("CARD");
-        JSONArray types = new JSONArray();
-        types.put("MASTERCARD");
-        googlePayRequest.setAllowedCardNetworks("CARD", types);
-        Log.i(TAG, googlePayRequest.toJson());
+        googlePayRequest.setAllowedCardNetworks("CARD", cardTypes);
+        googlePayRequest.setAllowedAuthMethods("CARD", authMethods);
+
+//        Log.i(TAG, googlePayRequest.toJson());
 
         this.collectDeviceData();
 
