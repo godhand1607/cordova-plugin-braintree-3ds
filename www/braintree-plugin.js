@@ -1,17 +1,16 @@
-'use strict';
+"use strict";
 
-var exec = require('cordova/exec');
+var exec = require("cordova/exec");
 
 /**
  * The Cordova plugin ID for this plugin.
  */
-var PLUGIN_ID = 'BraintreePlugin';
+var PLUGIN_ID = "BraintreePlugin";
 
 /**
  * The plugin which will be exported and exposed in the global scope.
  */
 var BraintreePlugin = {};
-
 
 /**
  * Used to initialize the Braintree client.
@@ -22,21 +21,29 @@ var BraintreePlugin = {};
  * @param [function] successCallback - The success callback for this asynchronous function.
  * @param [function] failureCallback - The failure callback for this asynchronous function; receives an error string.
  */
-BraintreePlugin.initialize = function initialize(token, successCallback, failureCallback) {
-
-  if (!token || typeof (token) !== 'string') {
-    failureCallback('A non-null, non-empty string must be provided for the token parameter.');
+BraintreePlugin.initialize = function initialize(
+  token,
+  successCallback,
+  failureCallback
+) {
+  if (!token || typeof token !== "string") {
+    failureCallback(
+      "A non-null, non-empty string must be provided for the token parameter."
+    );
     return;
   }
 
-  exec(successCallback, failureCallback, PLUGIN_ID, 'initialize', [token]);
+  exec(successCallback, failureCallback, PLUGIN_ID, "initialize", [token]);
 };
 
+BraintreePlugin.canMakePayments = function canMakePayments(
+  requireExistingPaymentMethods,
+  successCallback,
+  failureCallback
+) {
 
-BraintreePlugin.canMakePayments = function canMakePayments(successCallback, failureCallback) {
-  exec(successCallback, failureCallback, PLUGIN_ID, 'canMakePayments', []);
+  exec(successCallback, failureCallback, PLUGIN_ID, "canMakePayments", [requireExistingPaymentMethods ? true : false]);
 };
-
 
 /**
  * Used to configure Apple Pay on iOS.
@@ -45,34 +52,43 @@ BraintreePlugin.canMakePayments = function canMakePayments(successCallback, fail
  * @param [function] successCallback - The success callback for this asynchronous function.
  * @param [function] failureCallback - The failure callback for this asynchronous function; receives an error string.
  */
-BraintreePlugin.setupApplePay = function setupApplePay(options, successCallback, failureCallback) {
+BraintreePlugin.setupApplePay = function setupApplePay(
+  options,
+  successCallback,
+  failureCallback
+) {
   if (!options) {
     options = {};
   }
 
-  if (typeof (options.merchantId) !== 'string') {
-    failureCallback('Apple Pay Merchant ID must be provided');
+  if (typeof options.merchantId !== "string") {
+    failureCallback("Apple Pay Merchant ID must be provided");
   }
-  if (typeof (options.currency) !== 'string') {
-    failureCallback('Apple Pay currency must be provided');
+  if (typeof options.currency !== "string") {
+    failureCallback("Apple Pay currency must be provided");
   }
-  if (typeof (options.country) !== 'string') {
-    failureCallback('Apple Pay country must be provided');
+  if (typeof options.country !== "string") {
+    failureCallback("Apple Pay country must be provided");
   }
   if (!Array.isArray(options.cardTypes)) {
-    failureCallback('Apple Pay supported card types must be provided');
+    failureCallback("Apple Pay supported card types must be provided");
   }
 
   var pluginOptions = [
     options.merchantId,
     options.currency,
     options.country,
-    options.cardTypes
+    options.cardTypes,
   ];
 
-  exec(successCallback, failureCallback, PLUGIN_ID, 'setupApplePay', pluginOptions);
+  exec(
+    successCallback,
+    failureCallback,
+    PLUGIN_ID,
+    "setupApplePay",
+    pluginOptions
+  );
 };
-
 
 /**
  * Shows Braintree's drop-in payment UI.
@@ -81,31 +97,39 @@ BraintreePlugin.setupApplePay = function setupApplePay(options, successCallback,
  * @param [function] successCallback - The success callback for this asynchronous function; receives a result object.
  * @param [function] failureCallback - The failure callback for this asynchronous function; receives an error string.
  */
-BraintreePlugin.presentDropInPaymentUI = function showDropInUI(options, successCallback, failureCallback) {
-
+BraintreePlugin.presentDropInPaymentUI = function showDropInUI(
+  options,
+  successCallback,
+  failureCallback
+) {
   if (!options) {
     options = {};
   }
 
-  if (typeof (options.amount) === 'undefined') {
-    options.amount = '0.00';
+  if (typeof options.amount === "undefined") {
+    options.amount = "0.00";
   }
   if (!isNaN(options.amount * 1)) {
     options.amount = (options.amount * 1).toFixed(2);
   }
-  if (typeof (options.requiredShippingContactFields) === 'undefined') {
+  if (typeof options.requiredShippingContactFields === "undefined") {
     options.requiredShippingContactFields = [];
   }
 
   var pluginOptions = [
     options.amount,
     options.primaryDescription,
-    options.requiredShippingContactFields
+    options.requiredShippingContactFields,
   ];
 
-  exec(successCallback, failureCallback, PLUGIN_ID, 'presentDropInPaymentUI', pluginOptions);
+  exec(
+    successCallback,
+    failureCallback,
+    PLUGIN_ID,
+    "presentDropInPaymentUI",
+    pluginOptions
+  );
 };
-
 
 /**
  *
@@ -113,31 +137,38 @@ BraintreePlugin.presentDropInPaymentUI = function showDropInUI(options, successC
  * @param {*} successCallback
  * @param {*} failureCallback
  */
-BraintreePlugin.launchGooglePay = function launchGooglePay(options, successCallback, failureCallback) {
+BraintreePlugin.launchGooglePay = function launchGooglePay(
+  options,
+  successCallback,
+  failureCallback
+) {
+  if (!options) {
+    options = {};
+  }
 
-    if (!options) {
-      options = {};
-    }
+  if (typeof options.amount === "undefined") {
+    options.amount = "0.00";
+  }
+  if (!isNaN(options.amount * 1)) {
+    options.amount = (options.amount * 1).toFixed(2);
+  }
 
-    if (typeof (options.amount) === 'undefined') {
-      options.amount = '0.00';
-    }
-    if (!isNaN(options.amount * 1)) {
-      options.amount = (options.amount * 1).toFixed(2);
-    }
+  var pluginOptions = [
+    options.amount,
+    options.currency,
+    options.environment,
+    options.requiredShippingContactFields,
+    options.cardTypes,
+  ];
 
-
-    var pluginOptions = [
-      options.amount,
-      options.currency,
-      options.environment,
-      options.requiredShippingContactFields,
-      options.cardTypes
-    ];
-
-    exec(successCallback, failureCallback, PLUGIN_ID, 'launchGooglePay', pluginOptions);
+  exec(
+    successCallback,
+    failureCallback,
+    PLUGIN_ID,
+    "launchGooglePay",
+    pluginOptions
+  );
 };
-
 
 /**
  *
@@ -145,20 +176,28 @@ BraintreePlugin.launchGooglePay = function launchGooglePay(options, successCallb
  * @param {*} successCallback
  * @param {*} failureCallback
  */
-BraintreePlugin.verifyCard = function verifyCard(options, successCallback, failureCallback) {
+BraintreePlugin.verifyCard = function verifyCard(
+  options,
+  successCallback,
+  failureCallback
+) {
+  var pluginOptions = [
+    options.amount,
+    options.nonce,
+    options.email,
+    options.billingAddress.givenName,
+    options.billingAddress.surname,
+    options.billingAddress.phoneNumber,
+    options.billingAddress.countryCodeAlpha2,
+  ];
 
-    var pluginOptions = [
-      options.amount,
-      options.nonce,
-      options.email,
-      options.billingAddress.givenName,
-      options.billingAddress.surname,
-      options.billingAddress.phoneNumber,
-      options.billingAddress.countryCodeAlpha2,
-    ];
-
-    exec(successCallback, failureCallback, PLUGIN_ID, 'verifyCard', pluginOptions);
+  exec(
+    successCallback,
+    failureCallback,
+    PLUGIN_ID,
+    "verifyCard",
+    pluginOptions
+  );
 };
-
 
 module.exports = BraintreePlugin;

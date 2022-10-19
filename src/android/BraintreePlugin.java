@@ -124,6 +124,8 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
     }
 
     private void canMakePayments(final JSONArray args) throws JSONException {
+        boolean requireExistingPaymentMethods = args.getBoolean(0);
+
         braintreeClient.getConfiguration((configuration, error) -> {
             if (configuration == null) {
                 Log.e(TAG, "canMakePayments: braintree null config -> " + error.getMessage() + "\n" + error.getStackTrace());
@@ -135,7 +137,7 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
             if (GooglePayCapabilities.isGooglePayEnabled(cordova.getActivity(), configuration)) {
 
                 ReadyForGooglePayRequest readyForGooglePayRequest = new ReadyForGooglePayRequest();
-                readyForGooglePayRequest.setExistingPaymentMethodRequired(true);
+                readyForGooglePayRequest.setExistingPaymentMethodRequired(requireExistingPaymentMethods);
 
                 googlePayClient.isReadyToPay(cordova.getActivity(), readyForGooglePayRequest, (isReadyToPay, e) -> {
                     if (e != null) {
@@ -171,7 +173,7 @@ public final class BraintreePlugin extends CordovaPlugin implements GooglePayLis
 
     private boolean hasElement(JSONArray requiredContactFields, String key) throws JSONException {
         for (int i = 0 ; i < requiredContactFields.length(); i++) {
-            boolean isMatch = requiredContactFields.getString(i) == key;
+            boolean isMatch = requiredContactFields.getString(i).equals(key);
             if (isMatch) {
                 return true;
             }
