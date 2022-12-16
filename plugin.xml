@@ -2,7 +2,7 @@
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
         id="cordova-plugin-braintree-3ds"
-        version="4.0">
+        version="4.1">
 
 
     <name>Braintree Plugin</name>
@@ -21,7 +21,7 @@
     <!-- Android Configuration -->
     <platform name="android">
 
-        <preference name="ANDROID_BRAINTREE_VERSION" default="4.15.0" />
+        <preference name="ANDROID_BRAINTREE_VERSION" default="4.21.1" />
 
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="BraintreePlugin">
@@ -48,7 +48,7 @@
     <!-- iOS Configuration -->
     <platform name="ios">
 
-        <preference name="IOS_BRAINTREE_POD_VERSION" default="~> 5.10.0" />
+        <preference name="IOS_BRAINTREE_POD_VERSION" default="~> 5.18.0" />
 
         <config-file target="config.xml" parent="/*">
             <feature name="BraintreePlugin">
