@@ -48,7 +48,7 @@
     <!-- iOS Configuration -->
     <platform name="ios">
 
-        <preference name="IOS_BRAINTREE_POD_VERSION" default="~> 5.18.0" />
+        <preference name="IOS_BRAINTREE_POD_VERSION" default="~> 6.5.0" />
 
         <config-file target="config.xml" parent="/*">
             <feature name="BraintreePlugin">
