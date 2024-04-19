@@ -21,7 +21,7 @@
     <!-- Android Configuration -->
     <platform name="android">
 
-        <preference name="ANDROID_BRAINTREE_VERSION" default="4.21.1" />
+        <preference name="ANDROID_BRAINTREE_VERSION" default="4.31.0" />
 
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="BraintreePlugin">
